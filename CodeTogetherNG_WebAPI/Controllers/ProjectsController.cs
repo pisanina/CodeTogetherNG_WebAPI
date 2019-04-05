@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CodeTogetherNG_WebAPI.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CodeTogetherNG_WebAPI.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CodeTogetherNG_WebAPI.Controllers
 {
@@ -20,7 +20,6 @@ namespace CodeTogetherNG_WebAPI.Controllers
             _context = context;
         }
 
-       
         [HttpGet]
         public JsonResult Projects(string toSearch, int? projectState, bool? newMembers, List<int> techList)
         {
@@ -38,11 +37,24 @@ namespace CodeTogetherNG_WebAPI.Controllers
                Technologies = p.ProjectTechnology.Select(t => t.Technology.TechName)
            }));
         }
+
+        [Route("Details")]
+        [HttpGet]
+        public JsonResult ProjectDetails(int id)
+        {
+            return new JsonResult(_context.Project.Where(p => p.Id == id)
+                                    .Select(p => new {
+                                       Title = p.Title,
+                                       Description = p.Description,
+                                       Owner = p.Owner.UserName,
+                                        Member = p.ProjectMember.Select(m => m.Member.UserName),
+                                        CreationDate = p.CreationDate.ToString("dd/MM/yyyy"),
+                                        NewMembers = p.NewMembers,
+                                        Technologies = p.ProjectTechnology.Select(t => t.Technology.TechName),
+                                        State = p.State.State }).Single());
+        }
     }
 }
-
-
-
 
 //[HttpPut("{id}")]
 //public async Task<IActionResult> PutProject([FromRoute] int id, [FromBody] Project project)
