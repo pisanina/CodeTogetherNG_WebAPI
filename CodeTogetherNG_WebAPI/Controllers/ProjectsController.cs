@@ -1,10 +1,13 @@
-﻿using CodeTogetherNG_WebAPI.Entities;
+﻿using CodeTogetherNG_WebAPI.DTOs;
+using CodeTogetherNG_WebAPI.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace CodeTogetherNG_WebAPI.Controllers
@@ -43,15 +46,54 @@ namespace CodeTogetherNG_WebAPI.Controllers
         public JsonResult ProjectDetails(int id)
         {
             return new JsonResult(_context.Project.Where(p => p.Id == id)
-                                    .Select(p => new {
-                                       Title = p.Title,
-                                       Description = p.Description,
-                                       Owner = p.Owner.UserName,
+                                    .Select(p => new
+                                    {
+                                        Title = p.Title,
+                                        Description = p.Description,
+                                        Owner = p.Owner.UserName,
                                         Member = p.ProjectMember.Select(m => m.Member.UserName),
                                         CreationDate = p.CreationDate.ToString("dd/MM/yyyy"),
                                         NewMembers = p.NewMembers,
                                         Technologies = p.ProjectTechnology.Select(t => t.Technology.TechName),
-                                        State = p.State.State }).Single());
+                                        State = p.State.State
+                                    }).Single());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> PostProject([FromBody] AddProject addProject)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            Project project = new Project();
+            project.Title = addProject.Title;
+            project.Description = addProject.Description;
+            project.NewMembers = addProject.NewMembers;
+            project.OwnerId = "26AEDED9-3796-450B-B891-03272C849854";
+
+            foreach (var item in addProject.Technologies)
+            {
+                ProjectTechnology tech = new ProjectTechnology
+                {
+                    TechnologyId = item
+                };
+
+                project.ProjectTechnology.Add(tech);
+            }
+
+            _context.Project.Add(project);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+            }
+
+            // return CreatedAtAction(("GetProject", new { id = project.Id }, project);
+            return StatusCode((int)HttpStatusCode.Created);
         }
     }
 }
@@ -90,20 +132,22 @@ namespace CodeTogetherNG_WebAPI.Controllers
 //    return NoContent();
 //}
 
-//// POST: api/Projects
-//[HttpPost]
-//public async Task<IActionResult> PostProject([FromBody] Project project)
-//{
-//    if (!ModelState.IsValid)
-//    {
-//        return BadRequest(ModelState);
-//    }
+// POST: api/Projects
+/*[HttpPost]
+public async Task<IActionResult> PostProject([FromBody] Project project)
+{
+     if (!ModelState.IsValid)
+     {
+         return BadRequest(ModelState);
+     }
 
-//    _context.Project.Add(project);
-//    await _context.SaveChangesAsync();
+     _context.Project.Add(project);
+     await _context.SaveChangesAsync();
 
-//    return CreatedAtAction("GetProject", new { id = project.Id }, project);
-//}
+     return CreatedAtAction("GetProject", new { id = project.Id }, project);
+
+    return null;
+}*/
 
 //// DELETE: api/Projects/5
 //[HttpDelete("{id}")]
