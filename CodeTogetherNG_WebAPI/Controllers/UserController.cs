@@ -4,8 +4,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
+using CodeTogetherNG_WebAPI.DTOs;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace CodeTogetherNG_WebAPI.Controllers
 {
@@ -14,10 +22,18 @@ namespace CodeTogetherNG_WebAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly CodeTogetherNGContext _context;
+        UserManager<AspNetUsers> _userManager;
+        private SignInManager<AspNetUsers> _signInManager;
+        private IConfiguration _configuration;
 
-        public UserController(CodeTogetherNGContext context)
+
+        public UserController(CodeTogetherNGContext context, UserManager<AspNetUsers> userManager
+        , SignInManager<AspNetUsers> signInManager, IConfiguration configuration)
         {
             _context = context;
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _configuration = configuration;
         }
 
         [HttpGet("{userId}")]
@@ -47,6 +63,55 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 Advanced = u.UserTechnologyLevel.Where(t =>  t.TechLevel==2).Count(),
                 Expert = u.UserTechnologyLevel.Where(t =>  t.TechLevel==3).Count()
             }));
+        }
+
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody] UserDto userDto)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = new AspNetUsers {UserName = userDto.Username, Email = userDto.Username };
+                var result = await _userManager.CreateAsync(user, userDto.Password);
+                if (result.Succeeded)
+                    return StatusCode((int)HttpStatusCode.Created);
+            }
+            return StatusCode((int) HttpStatusCode.BadRequest);
+        }
+
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromBody] UserDto userDto)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var result =
+                        await _signInManager.PasswordSignInAsync(userDto.Username, userDto.Password, true, true);
+                    if (result.Succeeded)
+                    {
+                        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["jwtSecretKey"]));
+                        var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+
+                        var tokeOptions = new JwtSecurityToken(
+                            claims: new[]
+                            {
+                                new Claim(ClaimTypes.Name, userDto.Username)
+                            },
+                            expires: DateTime.Now.AddMinutes(5),
+                            signingCredentials: signinCredentials
+                        );
+
+                        var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
+                        return Ok(new { Token = tokenString });
+                    }
+                        
+                }
+                catch (Exception e)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest);
+                }
+            }
+            return StatusCode((int)HttpStatusCode.BadRequest);
         }
     }
 }

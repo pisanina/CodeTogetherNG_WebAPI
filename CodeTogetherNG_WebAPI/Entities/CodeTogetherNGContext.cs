@@ -1,10 +1,13 @@
 ﻿using System;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace CodeTogetherNG_WebAPI.Entities
 {
-    public partial class CodeTogetherNGContext : DbContext
+    public partial class CodeTogetherNGContext : IdentityDbContext<AspNetUsers,AspNetRoles,string
+        ,AspNetUserClaims,AspNetUserRoles,AspNetUserLogins,AspNetRoleClaims,AspNetUserTokens>
     {
         public CodeTogetherNGContext()
         {
@@ -32,11 +35,13 @@ namespace CodeTogetherNG_WebAPI.Entities
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=DESKTOP-67FEEF1\\SQLEXPRESS;Database=CodeTogetherNG;Trusted_Connection=True;");
+     
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<AspNetRoleClaims>(entity =>
             {
                 entity.HasIndex(e => e.RoleId);
@@ -73,7 +78,7 @@ namespace CodeTogetherNG_WebAPI.Entities
                     .HasForeignKey(d => d.UserId);
             });
 
-            modelBuilder.Entity<AspNetUserLogins>(entity =>
+            modelBuilder.Entity<IdentityUserLogin<string>>(entity =>
             {
                 entity.HasKey(e => new { e.LoginProvider, e.ProviderKey });
 
@@ -84,18 +89,24 @@ namespace CodeTogetherNG_WebAPI.Entities
                 entity.Property(e => e.ProviderKey).HasMaxLength(128);
 
                 entity.Property(e => e.UserId).IsRequired();
+            });
 
+            modelBuilder.Entity<AspNetUserLogins>(entity =>
+            {
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.AspNetUserLogins)
                     .HasForeignKey(d => d.UserId);
             });
 
-            modelBuilder.Entity<AspNetUserRoles>(entity =>
+            modelBuilder.Entity<IdentityUserRole<string>>(entity =>
             {
                 entity.HasKey(e => new { e.UserId, e.RoleId });
 
                 entity.HasIndex(e => e.RoleId);
+            });
 
+            modelBuilder.Entity<AspNetUserRoles>(entity =>
+            {
                 entity.HasOne(d => d.Role)
                     .WithMany(p => p.AspNetUserRoles)
                     .HasForeignKey(d => d.RoleId);
@@ -126,13 +137,17 @@ namespace CodeTogetherNG_WebAPI.Entities
                 entity.Property(e => e.UserName).HasMaxLength(256);
             });
 
-            modelBuilder.Entity<AspNetUserTokens>(entity =>
+            modelBuilder.Entity<IdentityUserToken<string>>(entity =>
             {
                 entity.HasKey(e => new { e.UserId, e.LoginProvider, e.Name });
 
                 entity.Property(e => e.LoginProvider).HasMaxLength(128);
 
                 entity.Property(e => e.Name).HasMaxLength(128);
+            });
+
+            modelBuilder.Entity<AspNetUserTokens>(entity =>
+            {
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.AspNetUserTokens)

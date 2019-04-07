@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CodeTogetherNG_WebAPI.Controllers
 {
@@ -59,7 +60,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
                                     }).Single());
         }
 
-        [HttpPost]
+        [HttpPost, Authorize("jwt")]
         public async Task<IActionResult> PostProject([FromBody] AddProject addProject)
         {
             if (!ModelState.IsValid)
