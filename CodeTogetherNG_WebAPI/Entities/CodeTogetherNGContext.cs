@@ -27,8 +27,8 @@ namespace CodeTogetherNG_WebAPI.Entities
         public virtual DbSet<AspNetUserTokens> AspNetUserTokens { get; set; }
         public virtual DbSet<Logs> Logs { get; set; }
         public virtual DbSet<Project> Project { get; set; }
-        public virtual DbSet<ITRole> Role { get; set; }
-        public virtual DbSet<UserITRole> UserRole { get; set; }
+        public virtual DbSet<ITRole> ITRole { get; set; }
+        public virtual DbSet<UserITRole> UserITRole { get; set; }
         public virtual DbSet<ProjectMember> ProjectMember { get; set; }
         public virtual DbSet<ProjectState> ProjectState { get; set; }
         public virtual DbSet<ProjectTechnology> ProjectTechnology { get; set; }
@@ -268,6 +268,30 @@ namespace CodeTogetherNG_WebAPI.Entities
                     .WithMany(p => p.UserTechnologyLevel)
                     .HasForeignKey(d => d.UserId)
                     .HasConstraintName("FK_UserTechnologyLevel_AspNetUsers");
+            });
+
+            modelBuilder.Entity<ITRole>(entity =>
+            {
+                entity.Property(e => e.Role).HasMaxLength(30);
+            });
+
+            modelBuilder.Entity<UserITRole>(entity =>
+            {
+                entity.HasKey(e => new { e.RoleId, e.UserId });
+
+                entity.HasIndex(e => new { e.RoleId, e.UserId })
+                    .HasName("UC_UserITRole_UserID_RoleID")
+                    .IsUnique();
+
+                entity.HasOne(d => d.Role)
+                    .WithMany(p => p.UserITRole)
+                    .HasForeignKey(d => d.RoleId)
+                    .HasConstraintName("FK_UserITRole_ITRole");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.UserITRole)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK_UserITRole_AspNetUsers");
             });
         }
     }

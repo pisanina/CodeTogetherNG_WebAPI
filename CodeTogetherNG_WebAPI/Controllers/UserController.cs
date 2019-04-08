@@ -120,7 +120,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
             try
             {
                 var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
-                var roleToDelete = user.UserITRole.Single(r => r.RoleId == id);
+                var roleToDelete = _context.UserITRole.Single(r => r.RoleId == id && r.UserId == user.Id);
                 user.UserITRole.Remove(roleToDelete);
                 _context.SaveChanges();
             }
