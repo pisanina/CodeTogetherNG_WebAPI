@@ -1,7 +1,12 @@
-﻿using CodeTogetherNG_WebAPI.Entities;
+﻿using CodeTogetherNG_WebAPI.DTOs;
+using CodeTogetherNG_WebAPI.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -10,10 +15,6 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using CodeTogetherNG_WebAPI.DTOs;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
 namespace CodeTogetherNG_WebAPI.Controllers
 {
@@ -22,10 +23,9 @@ namespace CodeTogetherNG_WebAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly CodeTogetherNGContext _context;
-        UserManager<AspNetUsers> _userManager;
+        private UserManager<AspNetUsers> _userManager;
         private SignInManager<AspNetUsers> _signInManager;
         private IConfiguration _configuration;
-
 
         public UserController(CodeTogetherNGContext context, UserManager<AspNetUsers> userManager
         , SignInManager<AspNetUsers> signInManager, IConfiguration configuration)
@@ -59,9 +59,9 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 u.UserName,
                 Owner = u.Project.Select(m => new { m.OwnerId }).Count(),
                 Member = u.ProjectMember.Select(m => new { m.MemberId }).Count(),
-                Beginner = u.UserTechnologyLevel.Where(t =>  t.TechLevel==1).Count(),
-                Advanced = u.UserTechnologyLevel.Where(t =>  t.TechLevel==2).Count(),
-                Expert = u.UserTechnologyLevel.Where(t =>  t.TechLevel==3).Count()
+                Beginner = u.UserTechnologyLevel.Where(t => t.TechLevel == 1).Count(),
+                Advanced = u.UserTechnologyLevel.Where(t => t.TechLevel == 2).Count(),
+                Expert = u.UserTechnologyLevel.Where(t => t.TechLevel == 3).Count()
             }));
         }
 
@@ -75,7 +75,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 if (result.Succeeded)
                     return StatusCode((int)HttpStatusCode.Created);
             }
-            return StatusCode((int) HttpStatusCode.BadRequest);
+            return StatusCode((int)HttpStatusCode.BadRequest);
         }
 
         [HttpPost("Login")]
@@ -104,7 +104,6 @@ namespace CodeTogetherNG_WebAPI.Controllers
                         var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
                         return Ok(new { Token = tokenString });
                     }
-                        
                 }
                 catch (Exception e)
                 {
@@ -112,6 +111,24 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 }
             }
             return StatusCode((int)HttpStatusCode.BadRequest);
+        }
+
+        [Route("Delete/ITRole/{id}")]
+        [HttpDelete, Authorize("jwt")]
+        public async Task<IActionResult> DeleteITRole(int id)
+        {
+            try
+            {
+                var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
+                var roleToDelete = user.UserITRole.Single(r => r.RoleId == id);
+                user.UserITRole.Remove(roleToDelete);
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest);
+            }
+            return StatusCode((int)HttpStatusCode.OK);
         }
     }
 }

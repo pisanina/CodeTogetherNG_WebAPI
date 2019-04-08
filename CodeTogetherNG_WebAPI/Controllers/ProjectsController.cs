@@ -1,5 +1,6 @@
 ﻿using CodeTogetherNG_WebAPI.DTOs;
 using CodeTogetherNG_WebAPI.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 
 namespace CodeTogetherNG_WebAPI.Controllers
 {
@@ -91,10 +91,29 @@ namespace CodeTogetherNG_WebAPI.Controllers
             }
             catch (Exception ex)
             {
+                return StatusCode((int)HttpStatusCode.BadRequest);
             }
 
             // return CreatedAtAction(("GetProject", new { id = project.Id }, project);
             return StatusCode((int)HttpStatusCode.Created);
+        }
+
+        [Route("Delete/{id}")]
+        [HttpDelete, Authorize("jwt")]
+        public async Task<IActionResult> DeleteProject(int id)
+        {
+            try
+            {
+                var projectToDelete = _context.Project.Single(p => p.Id == id);
+                _context.Entry(projectToDelete).Collection(p => p.ProjectTechnology).Load();
+                _context.Remove(projectToDelete);
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest);
+            }
+            return StatusCode((int)HttpStatusCode.OK);
         }
     }
 }

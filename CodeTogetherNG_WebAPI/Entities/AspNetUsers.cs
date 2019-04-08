@@ -16,6 +16,8 @@ namespace CodeTogetherNG_WebAPI.Entities
             Project = new HashSet<Project>();
             ProjectMember = new HashSet<ProjectMember>();
             UserTechnologyLevel = new HashSet<UserTechnologyLevel>();
+            UserITRole = new HashSet<UserITRole>();
+
         }
 
         public ICollection<AspNetUserClaims> AspNetUserClaims { get; set; }
@@ -25,5 +27,6 @@ namespace CodeTogetherNG_WebAPI.Entities
         public ICollection<Project> Project { get; set; }
         public ICollection<ProjectMember> ProjectMember { get; set; }
         public ICollection<UserTechnologyLevel> UserTechnologyLevel { get; set; }
-    }
+        public ICollection<UserITRole> UserITRole { get; set; }
+}
 }

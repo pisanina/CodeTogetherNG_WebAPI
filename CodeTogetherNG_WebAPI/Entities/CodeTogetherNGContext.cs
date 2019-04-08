@@ -27,6 +27,8 @@ namespace CodeTogetherNG_WebAPI.Entities
         public virtual DbSet<AspNetUserTokens> AspNetUserTokens { get; set; }
         public virtual DbSet<Logs> Logs { get; set; }
         public virtual DbSet<Project> Project { get; set; }
+        public virtual DbSet<ITRole> Role { get; set; }
+        public virtual DbSet<UserITRole> UserRole { get; set; }
         public virtual DbSet<ProjectMember> ProjectMember { get; set; }
         public virtual DbSet<ProjectState> ProjectState { get; set; }
         public virtual DbSet<ProjectTechnology> ProjectTechnology { get; set; }
@@ -236,7 +238,7 @@ namespace CodeTogetherNG_WebAPI.Entities
                 entity.HasOne(d => d.Project)
                     .WithMany(p => p.ProjectTechnology)
                     .HasForeignKey(d => d.ProjectId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("FK__ProjectTe__Proje__7755B73D");
 
                 entity.HasOne(d => d.Technology)
