@@ -130,5 +130,29 @@ namespace CodeTogetherNG_WebAPI.Controllers
             }
             return StatusCode((int)HttpStatusCode.OK);
         }
+
+        [Route("Add/ITRole/{id}")]
+        [HttpDelete, Authorize("jwt")]
+        public async Task<IActionResult> AddITRole(int id)
+        {
+            try
+            {
+                var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
+                var  newItRole = new UserITRole
+                {
+                    UserId = user.Id,
+                    RoleId = id
+                };
+
+                _context.UserITRole.Add(newItRole);
+
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest);
+            }
+            return StatusCode((int)HttpStatusCode.Created);
+        }
     }
 }
