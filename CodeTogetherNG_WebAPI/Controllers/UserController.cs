@@ -121,7 +121,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
             {
                 var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
                 var roleToDelete = _context.UserITRole.Single(r => r.RoleId == id && r.UserId == user.Id);
-                user.UserITRole.Remove(roleToDelete);
+                _context.UserITRole.Remove(roleToDelete);
                 _context.SaveChanges();
             }
             catch (Exception ex)
@@ -180,6 +180,24 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 return StatusCode((int)HttpStatusCode.BadRequest);
             }
             return StatusCode((int)HttpStatusCode.Created);
+        }
+
+        [Route("Delete/Tech/{id}")]
+        [HttpDelete, Authorize("jwt")]
+        public async Task<IActionResult> DeleteTech(int id)
+        {
+            try
+            {
+                var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
+                var techToDelete = _context.UserTechnologyLevel.Single(r => r.TechnologyId == id && r.UserId == user.Id);
+                _context.UserTechnologyLevel.Remove(techToDelete);
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest);
+            }
+            return StatusCode((int)HttpStatusCode.OK);
         }
     }
 }
