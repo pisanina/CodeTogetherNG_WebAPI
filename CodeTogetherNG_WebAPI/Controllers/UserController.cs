@@ -131,20 +131,47 @@ namespace CodeTogetherNG_WebAPI.Controllers
             return StatusCode((int)HttpStatusCode.OK);
         }
 
-        [Route("Add/ITRole/{id}")]
-        [HttpDelete, Authorize("jwt")]
-        public async Task<IActionResult> AddITRole(int id)
+        [Route("Add/ITRole")]
+        [HttpPost, Authorize("jwt")]
+        public async Task<IActionResult> AddITRole([FromBody] ITRoleDto roleDto)
+        {
+            try
+            {
+                //var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
+                var  role = new UserITRole
+                {
+                    UserId = roleDto.UserId,
+                    RoleId = roleDto.RoleID
+                };
+
+                _context.UserITRole.Add(role);
+
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest);
+            }
+            return StatusCode((int)HttpStatusCode.Created);
+        }
+
+
+        [Route("Add/Tech")]
+        [HttpPost, Authorize("jwt")]
+        public async Task<IActionResult> AddTech([FromBody] TechDto techDto)
         {
             try
             {
                 var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
-                var  newItRole = new UserITRole
+                var  newTech = new UserTechnologyLevel
                 {
                     UserId = user.Id,
-                    RoleId = id
+                    TechnologyId = techDto.TechnologyId,
+                    TechLevel = techDto.TechLevel
+
                 };
 
-                _context.UserITRole.Add(newItRole);
+                _context.UserTechnologyLevel.Add(newTech);
 
                 _context.SaveChanges();
             }
