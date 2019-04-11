@@ -27,8 +27,9 @@ namespace CodeTogetherNG_WebAPI.Controllers
         [HttpGet]
         public JsonResult Projects(string toSearch, int? projectState, bool? newMembers, List<int> techList)
         {
-            return new JsonResult(_context.Project.Where(p =>
-        (projectState == null || p.StateId == projectState)
+            var result = _context.Project.Where(p =>
+            (p.Deleted==false)
+        &&(projectState == null || p.StateId == projectState)
         && (newMembers == null || p.NewMembers == newMembers)
         && (techList == null || !techList.Except(p.ProjectTechnology.Select(t => t.TechnologyId)).Any())
         && (toSearch == null || p.Title.Contains(toSearch) || p.Description.Contains(toSearch))).
@@ -38,8 +39,10 @@ namespace CodeTogetherNG_WebAPI.Controllers
                Title = p.Title,
                Description = p.Description,
                NewMembers = p.NewMembers,
+               State = p.State.State,
                Technologies = p.ProjectTechnology.Select(t => t.Technology.TechName)
-           }));
+           });
+            return new JsonResult(result);
         }
 
         [Route("Details")]
@@ -102,18 +105,74 @@ namespace CodeTogetherNG_WebAPI.Controllers
         [HttpDelete, Authorize("jwt")]
         public async Task<IActionResult> DeleteProject(int id)
         {
-            try
+            var isItOwner = _context.Project.Include(u => u.Owner).Single(i => i.Id == id).Owner.UserName == User.Identity.Name;
+            if (isItOwner)
             {
-                var projectToDelete = _context.Project.Single(p => p.Id == id);
-                _context.Entry(projectToDelete).Collection(p => p.ProjectTechnology).Load();
-                _context.Remove(projectToDelete);
-                _context.SaveChanges();
+                try
+                {
+                    var projectToDelete = _context.Project.Single(p => p.Id == id);
+                    projectToDelete.Deleted = true;
+                    _context.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest);
+                }
+                return StatusCode((int)HttpStatusCode.OK);
             }
-            catch (Exception ex)
+            else
             {
-                return StatusCode((int)HttpStatusCode.BadRequest);
+                return StatusCode((int)HttpStatusCode.Unauthorized);
             }
-            return StatusCode((int)HttpStatusCode.OK);
+        }
+
+        [Route("Change")]
+        [HttpPost, Authorize("jwt")]
+        public async Task<IActionResult> ChangeProject([FromBody] ChangeProject changedProject)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var isITowner = _context.Project.Include(u => u.Owner).Include(t => t.ProjectTechnology).Single(i => i.Id == changedProject.ProjectId).Owner.UserName == User.Identity.Name;
+            if (isITowner)
+            {
+                Project editedProject = _context.Project.Single(p => p.Id == changedProject.ProjectId);
+                editedProject.Title = changedProject.Title;
+                editedProject.Description = changedProject.Description;
+                editedProject.NewMembers = changedProject.NewMembers;
+                editedProject.StateId = changedProject.State;
+               
+                if(changedProject.Technologies.Count()!=0)
+                {
+                    editedProject.ProjectTechnology.Clear();
+                }
+
+                foreach (var item in changedProject.Technologies)
+                {
+                    ProjectTechnology tech = new ProjectTechnology
+                    {
+                        TechnologyId = item
+                    };
+
+                    editedProject.ProjectTechnology.Add(tech);
+                }
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return StatusCode((int)HttpStatusCode.OK);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest);
+                }
+            }
+            else
+            {
+                return StatusCode((int)HttpStatusCode.Unauthorized);
+            }
+
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CodeTogetherNG_WebAPI.DTOs
 {
-    public class AddProject
+    public class ChangeProject
     {
         [Required]
         [MinLength(3)]
@@ -18,8 +18,10 @@ namespace CodeTogetherNG_WebAPI.DTOs
         [MaxLength(1000)]
         public string Description { get; set; }
 
-
         public bool NewMembers { get; set; }
+        public int State { get; set; }
         public List<int> Technologies { get; set; }
+        public int ProjectId { get; set; }
+
     }
 }

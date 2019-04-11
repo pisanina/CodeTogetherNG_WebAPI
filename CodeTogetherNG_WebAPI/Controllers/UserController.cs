@@ -20,17 +20,15 @@ namespace CodeTogetherNG_WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : ControllerBase
+    public class UserController : CommonController
     {
-        private readonly CodeTogetherNGContext _context;
         private UserManager<AspNetUsers> _userManager;
         private SignInManager<AspNetUsers> _signInManager;
         private IConfiguration _configuration;
 
         public UserController(CodeTogetherNGContext context, UserManager<AspNetUsers> userManager
-        , SignInManager<AspNetUsers> signInManager, IConfiguration configuration)
+        , SignInManager<AspNetUsers> signInManager, IConfiguration configuration) :base(context)
         {
-            _context = context;
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
@@ -44,10 +42,14 @@ namespace CodeTogetherNG_WebAPI.Controllers
 
             var userOwner = _context.Project.Where(o => o.OwnerId == userId)
                 .Select(u => new {u.Id, u.Title });
+
             var userMember = _context.ProjectMember.Where(m => (m.MemberId == userId)
                                 && (m.AddMember == true)).Select(u => new {u.Project.Id, u.Project.Title });
 
-            return new JsonResult(new { userSkills, userOwner, userMember });
+            var userITRole = _context.UserITRole.Where(r => r.UserId == userId)
+                .Select(n => new { n.RoleId, n.Role.Role });
+
+            return new JsonResult(new { userSkills, userOwner, userMember, userITRole });
         }
 
         [HttpGet]
@@ -61,7 +63,8 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 Member = u.ProjectMember.Select(m => new { m.MemberId }).Count(),
                 Beginner = u.UserTechnologyLevel.Where(t => t.TechLevel == 1).Count(),
                 Advanced = u.UserTechnologyLevel.Where(t => t.TechLevel == 2).Count(),
-                Expert = u.UserTechnologyLevel.Where(t => t.TechLevel == 3).Count()
+                Expert = u.UserTechnologyLevel.Where(t => t.TechLevel == 3).Count(),
+                ITRole = u.UserITRole.Select(r => new { r.Role }).Count()
             }));
         }
 
@@ -113,14 +116,13 @@ namespace CodeTogetherNG_WebAPI.Controllers
             return StatusCode((int)HttpStatusCode.BadRequest);
         }
 
-        [Route("Delete/ITRole/{id}")]
+        [Route("ITRole/{id}")]
         [HttpDelete, Authorize("jwt")]
         public async Task<IActionResult> DeleteITRole(int id)
         {
             try
             {
-                var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
-                var roleToDelete = _context.UserITRole.Single(r => r.RoleId == id && r.UserId == user.Id);
+                var roleToDelete = _context.UserITRole.Single(r => r.RoleId == id && r.UserId == UserId);
                 _context.UserITRole.Remove(roleToDelete);
                 _context.SaveChanges();
             }
@@ -131,17 +133,16 @@ namespace CodeTogetherNG_WebAPI.Controllers
             return StatusCode((int)HttpStatusCode.OK);
         }
 
-        [Route("Add/ITRole")]
+        [Route("ITRole")]
         [HttpPost, Authorize("jwt")]
-        public async Task<IActionResult> AddITRole([FromBody] ITRoleDto roleDto)
+        public async Task<IActionResult> AddITRole([FromBody] int roleId)
         {
             try
             {
-                //var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
                 var  role = new UserITRole
                 {
-                    UserId = roleDto.UserId,
-                    RoleId = roleDto.RoleID
+                    UserId = this.UserId,
+                    RoleId = roleId
                 };
 
                 _context.UserITRole.Add(role);
@@ -156,19 +157,17 @@ namespace CodeTogetherNG_WebAPI.Controllers
         }
 
 
-        [Route("Add/Tech")]
+        [Route("Tech")]
         [HttpPost, Authorize("jwt")]
         public async Task<IActionResult> AddTech([FromBody] TechDto techDto)
         {
             try
             {
-                var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
                 var  newTech = new UserTechnologyLevel
                 {
-                    UserId = user.Id,
+                    UserId = this.UserId,
                     TechnologyId = techDto.TechnologyId,
                     TechLevel = techDto.TechLevel
-
                 };
 
                 _context.UserTechnologyLevel.Add(newTech);
@@ -182,14 +181,13 @@ namespace CodeTogetherNG_WebAPI.Controllers
             return StatusCode((int)HttpStatusCode.Created);
         }
 
-        [Route("Delete/Tech/{id}")]
+        [Route("Tech/{id}")]
         [HttpDelete, Authorize("jwt")]
         public async Task<IActionResult> DeleteTech(int id)
         {
             try
             {
-                var user = _context.AspNetUsers.Single(u => u.UserName == User.Identity.Name);
-                var techToDelete = _context.UserTechnologyLevel.Single(r => r.TechnologyId == id && r.UserId == user.Id);
+                var techToDelete = _context.UserTechnologyLevel.Single(r => r.TechnologyId == id && r.UserId == UserId);
                 _context.UserTechnologyLevel.Remove(techToDelete);
                 _context.SaveChanges();
             }
