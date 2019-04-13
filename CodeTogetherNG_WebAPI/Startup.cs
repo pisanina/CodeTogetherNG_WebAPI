@@ -55,7 +55,6 @@ namespace CodeTogetherNG_WebAPI
                 });
             });
 
-
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -79,6 +78,14 @@ namespace CodeTogetherNG_WebAPI
             }
 
             app.UseAuthentication();
+            app.UseCors(options => 
+                options.WithOrigins("http://localhost:4432",
+                   "https://codetogetherng-jquery-test.azurewebsites.net",
+                   "https://codetogetherng-jquery.azurewebsites.net",
+                   "https://codetogetherng-angular-test.azurewebsites.net",
+                   "https://codetogetherng-angular.azurewebsites.net")
+                   .AllowAnyHeader().AllowAnyMethod());
+           
 
             app.UseHttpsRedirection();
             app.UseMvc();

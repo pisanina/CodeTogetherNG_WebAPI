@@ -77,6 +77,8 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 var result = await _userManager.CreateAsync(user, userDto.Password);
                 if (result.Succeeded)
                     return StatusCode((int)HttpStatusCode.Created);
+                else
+                    return StatusCode((int)HttpStatusCode.BadRequest, result.Errors);
             }
             return StatusCode((int)HttpStatusCode.BadRequest);
         }

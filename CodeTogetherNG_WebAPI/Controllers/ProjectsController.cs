@@ -127,7 +127,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
         }
 
         [Route("Change")]
-        [HttpPost, Authorize("jwt")]
+        [HttpPut, Authorize("jwt")]
         public async Task<IActionResult> ChangeProject([FromBody] ChangeProject changedProject)
         {
             if (!ModelState.IsValid)
