@@ -15,14 +15,12 @@ namespace CodeTogetherNG_WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProjectsController : ControllerBase
+    public class ProjectsController : CommonController
     {
-        private readonly CodeTogetherNGContext _context;
+       
 
-        public ProjectsController(CodeTogetherNGContext context)
-        {
-            _context = context;
-        }
+        public ProjectsController(CodeTogetherNGContext context) :base(context)
+        {}
 
         [HttpGet]
         public JsonResult Projects(string toSearch, int? projectState, bool? newMembers, List<int> techList)
@@ -45,7 +43,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
             return new JsonResult(result);
         }
 
-        [Route("Details")]
+        [Route("{id}")]
         [HttpGet]
         public JsonResult ProjectDetails(int id)
         {
@@ -54,8 +52,8 @@ namespace CodeTogetherNG_WebAPI.Controllers
                                     {
                                         Title = p.Title,
                                         Description = p.Description,
-                                        Owner = p.Owner.UserName,
-                                        Member = p.ProjectMember.Select(m => m.Member.UserName),
+                                        Owner = new{ p.OwnerId, p.Owner.UserName },
+                                        Member = p.ProjectMember.Select(m => new { m.Member.UserName, m.MemberId }),
                                         CreationDate = p.CreationDate.ToString("dd/MM/yyyy"),
                                         NewMembers = p.NewMembers,
                                         Technologies = p.ProjectTechnology.Select(t => t.Technology.TechName),
@@ -75,7 +73,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
             project.Title = addProject.Title;
             project.Description = addProject.Description;
             project.NewMembers = addProject.NewMembers;
-            project.OwnerId = "26AEDED9-3796-450B-B891-03272C849854";
+            project.OwnerId = UserId;
 
             foreach (var item in addProject.Technologies)
             {
