@@ -53,7 +53,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
                                         Title = p.Title,
                                         Description = p.Description,
                                         Owner = new { Id = p.OwnerId, p.Owner.UserName },
-                                        Member = p.ProjectMember.Select(m => new { m.Member.UserName, Id = m.MemberId }),
+                                        Member = p.ProjectMember.Where(a => a.AddMember == true).Select(m => new { m.Member.UserName, Id = m.MemberId }),
                                         CreationDate = p.CreationDate.ToString("dd/MM/yyyy"),
                                         NewMembers = p.NewMembers,
                                         Technologies = p.ProjectTechnology.Select(t => t.Technology.TechName),
@@ -248,6 +248,32 @@ namespace CodeTogetherNG_WebAPI.Controllers
             { Display = false, Message = "Your unable to send a join request until " +
                     result.Date.AddMonths(1).ToString("dd/MM/yyyy")});  // rejected within 30 days
 
+        }
+
+
+        [Route("Request")]
+        [HttpPut, Authorize("jwt")]
+        public IActionResult AcceptRequest([FromBody] HandleRequestDto handleRequest)
+        {            
+
+            if (_context.Project.Single(p => p.Id == handleRequest.ProjectId).OwnerId == UserId)
+            {
+              var status = _context.ProjectMember.Single(p => p.ProjectId == handleRequest.ProjectId && p.MemberId ==  handleRequest.UserId);
+               status.AddMember = handleRequest.Accept;
+            }
+            else
+            {
+                return StatusCode((int)HttpStatusCode.Unauthorized);
+            }
+            try
+            {
+                _context.SaveChangesAsync();
+                return StatusCode((int)HttpStatusCode.OK);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest);
+            }
         }
     }
 }
