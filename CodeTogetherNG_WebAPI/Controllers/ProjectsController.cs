@@ -17,10 +17,10 @@ namespace CodeTogetherNG_WebAPI.Controllers
     [ApiController]
     public class ProjectsController : CommonController
     {
-       
 
-        public ProjectsController(CodeTogetherNGContext context) :base(context)
-        {}
+
+        public ProjectsController(CodeTogetherNGContext context) : base(context)
+        { }
 
         [HttpGet]
         public JsonResult Projects(string toSearch, int? projectState, bool? newMembers, List<int> techList)
@@ -52,8 +52,8 @@ namespace CodeTogetherNG_WebAPI.Controllers
                                     {
                                         Title = p.Title,
                                         Description = p.Description,
-                                        Owner = new{ p.OwnerId, p.Owner.UserName },
-                                        Member = p.ProjectMember.Select(m => new { m.Member.UserName, m.MemberId }),
+                                        Owner = new { Id = p.OwnerId, p.Owner.UserName },
+                                        Member = p.ProjectMember.Select(m => new { m.Member.UserName, Id = m.MemberId }),
                                         CreationDate = p.CreationDate.ToString("dd/MM/yyyy"),
                                         NewMembers = p.NewMembers,
                                         Technologies = p.ProjectTechnology.Select(t => t.Technology.TechName),
@@ -141,8 +141,8 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 editedProject.Description = changedProject.Description;
                 editedProject.NewMembers = changedProject.NewMembers;
                 editedProject.StateId = changedProject.State;
-               
-                if(changedProject.Technologies.Count()!=0)
+
+                if (changedProject.Technologies.Count() != 0)
                 {
                     editedProject.ProjectTechnology.Clear();
                 }
@@ -172,82 +172,82 @@ namespace CodeTogetherNG_WebAPI.Controllers
             }
 
         }
+
+        [Route("Request")]
+        [HttpPost, Authorize("jwt")]
+        public async Task<IActionResult> SendRequest([FromBody] RequestDto newRequest)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            ProjectMember projectMember = new ProjectMember();
+            projectMember.MemberId = UserId;
+            projectMember.Message = newRequest.Message;
+            projectMember.ProjectId = newRequest.ProjectId;
+
+            _context.ProjectMember.Add(projectMember);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return StatusCode((int)HttpStatusCode.Created);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode((int)HttpStatusCode.BadRequest);
+            }
+        }
+
+        [Route("RequestList/{projectId}")]
+        [HttpGet, Authorize("jwt")]
+        public IActionResult GetRequestByOwner(int projectId)
+        {
+            if (_context.Project.Single(p => p.Id == projectId).OwnerId == UserId)
+            {
+
+                return new JsonResult(_context.ProjectMember.Where(p => p.ProjectId == projectId && p.AddMember ==null)
+                                        .Select(p => new
+                                        {
+                                            MemberId = p.MemberId,
+                                            MemberName = p.Member.UserName,
+                                            Message = p.Message,
+                                            Accepted = p.AddMember
+                                        }));
+            }
+            else
+            {
+                return StatusCode((int)HttpStatusCode.Unauthorized);
+            }
+        }
+
+
+        [Route("Request/{projectId}")]
+        [HttpGet, Authorize("jwt")]
+        public IActionResult GetRequestByLoggedUser(int projectId)
+        {
+       
+                var result = _context.ProjectMember.Where
+                    (p => p.ProjectId == projectId  && p.MemberId ==UserId)
+                                        .Select(p => new
+                                        {
+                                            Date = p.MessageDate,
+                                            Accepted = p.AddMember
+                                        }).OrderByDescending(p => p.Date).First();
+
+            if (result is null)
+                return new JsonResult(new { Display=true, Message="" }); // first attempt
+            if (result.Accepted == true)
+                return new JsonResult (new { Display = false, Message = "" }); // already a member
+            if (result.Accepted is null)
+                return new JsonResult(new { Display = false, Message = "Your request is pending" });  // pending
+            if (result.Accepted == false && result.Date.AddMonths(1) <= DateTime.Now)
+                return new JsonResult (new { Display = true, Message = "" });  // rejected but long time ago
+            return new JsonResult ( new
+            { Display = false, Message = "Your unable to send a join request until " +
+                    result.Date.AddMonths(1).ToString("dd/MM/yyyy")});  // rejected within 30 days
+
+        }
     }
 }
-
-//[HttpPut("{id}")]
-//public async Task<IActionResult> PutProject([FromRoute] int id, [FromBody] Project project)
-//{
-//    if (!ModelState.IsValid)
-//    {
-//        return BadRequest(ModelState);
-//    }
-
-//    if (id != project.Id)
-//    {
-//        return BadRequest();
-//    }
-
-//    _context.Entry(project).State = EntityState.Modified;
-
-//    try
-//    {
-//        await _context.SaveChangesAsync();
-//    }
-//    catch (DbUpdateConcurrencyException)
-//    {
-//        if (!ProjectExists(id))
-//        {
-//            return NotFound();
-//        }
-//        else
-//        {
-//            throw;
-//        }
-//    }
-
-//    return NoContent();
-//}
-
-// POST: api/Projects
-/*[HttpPost]
-public async Task<IActionResult> PostProject([FromBody] Project project)
-{
-     if (!ModelState.IsValid)
-     {
-         return BadRequest(ModelState);
-     }
-
-     _context.Project.Add(project);
-     await _context.SaveChangesAsync();
-
-     return CreatedAtAction("GetProject", new { id = project.Id }, project);
-
-    return null;
-}*/
-
-//// DELETE: api/Projects/5
-//[HttpDelete("{id}")]
-//public async Task<IActionResult> DeleteProject([FromRoute] int id)
-//{
-//    if (!ModelState.IsValid)
-//    {
-//        return BadRequest(ModelState);
-//    }
-
-//    var project = await _context.Project.FindAsync(id);
-//    if (project == null)
-//    {
-//        return NotFound();
-//    }
-
-//    _context.Project.Remove(project);
-//    await _context.SaveChangesAsync();
-
-//    return Ok(project);
-//}
-
-//private bool ProjectExists(int id)
-//{
-//    return _context.Project.Any(e => e.Id == id);
-//}
