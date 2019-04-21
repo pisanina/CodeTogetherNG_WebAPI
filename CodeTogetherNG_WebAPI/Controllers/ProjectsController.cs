@@ -56,8 +56,8 @@ namespace CodeTogetherNG_WebAPI.Controllers
                                         Member = p.ProjectMember.Where(a => a.AddMember == true).Select(m => new { m.Member.UserName, Id = m.MemberId }),
                                         CreationDate = p.CreationDate.ToString("dd/MM/yyyy"),
                                         NewMembers = p.NewMembers,
-                                        Technologies = p.ProjectTechnology.Select(t => t.Technology.TechName),
-                                        State = p.State.State
+                                        Technologies = p.ProjectTechnology.Select(t => t.Technology.Id),
+                                        State = p.State.Id
                                     }).Single());
         }
 
