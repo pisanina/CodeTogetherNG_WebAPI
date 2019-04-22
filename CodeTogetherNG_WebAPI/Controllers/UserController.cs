@@ -49,7 +49,9 @@ namespace CodeTogetherNG_WebAPI.Controllers
             var userITRole = _context.UserITRole.Where(r => r.UserId == userId)
                 .Select(n => new { n.RoleId, n.Role.Role });
 
-            return new JsonResult(new { userSkills, userOwner, userMember, userITRole });
+            var userName = _context.AspNetUsers.Single(u => u.Id==userId).UserName;
+
+            return new JsonResult(new { userSkills, userOwner, userMember, userITRole, userName });
         }
 
         [HttpGet]
@@ -60,7 +62,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 u.Id,
                 u.UserName,
                 Owner = u.Project.Select(m => new { m.OwnerId }).Count(),
-                Member = u.ProjectMember.Select(m => new { m.MemberId }).Count(),
+                Member = u.ProjectMember.Where(m => m.AddMember==true).Select(m => new { m.MemberId }).Count(),
                 Beginner = u.UserTechnologyLevel.Where(t => t.TechLevel == 1).Count(),
                 Advanced = u.UserTechnologyLevel.Where(t => t.TechLevel == 2).Count(),
                 Expert = u.UserTechnologyLevel.Where(t => t.TechLevel == 3).Count(),
@@ -198,6 +200,13 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 return StatusCode((int)HttpStatusCode.BadRequest);
             }
             return StatusCode((int)HttpStatusCode.OK);
+        }
+
+        [Route("Logged")]
+        [HttpGet, Authorize("jwt")]
+        public JsonResult GetLoggedUser()
+        {
+            return new JsonResult (User.Identity.Name);
         }
     }
 }
