@@ -38,7 +38,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
         public JsonResult Profile(string userId)
         {
             var userSkills = _context.UserTechnologyLevel.Where(u => u.UserId == userId)
-                .Select(t => new { t.Technology.TechName, t.TechLevel });
+                .Select(t => new { t.Technology.TechName, t.Technology.Id, t.TechLevel });
 
             var userOwner = _context.Project.Where(o => o.OwnerId == userId)
                 .Select(u => new {u.Id, u.Title });
@@ -104,7 +104,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
                             {
                                 new Claim(ClaimTypes.Name, userDto.Username)
                             },
-                            expires: DateTime.Now.AddMinutes(5),
+                            expires: DateTime.Now.AddMinutes(15),
                             signingCredentials: signinCredentials
                         );
 
@@ -206,7 +206,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
         [HttpGet, Authorize("jwt")]
         public JsonResult GetLoggedUser()
         {
-            return new JsonResult (User.Identity.Name);
+            return new JsonResult (new { name = User.Identity.Name, id = UserId });
         }
     }
 }

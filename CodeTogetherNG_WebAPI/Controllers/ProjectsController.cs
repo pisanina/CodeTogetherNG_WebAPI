@@ -103,8 +103,9 @@ namespace CodeTogetherNG_WebAPI.Controllers
         [HttpDelete, Authorize("jwt")]
         public async Task<IActionResult> DeleteProject(int id)
         {
-            var isItOwner = _context.Project.Include(u => u.Owner).Single(i => i.Id == id).Owner.UserName == User.Identity.Name;
-            if (isItOwner)
+            var OwnerName = _context.Project.Include(u => u.Owner).Single(i => i.Id == id).Owner.UserName;
+           
+            if (OwnerName.ToLower() == User.Identity.Name)
             {
                 try
                 {
@@ -133,7 +134,9 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var isITowner = _context.Project.Include(u => u.Owner).Include(t => t.ProjectTechnology).Single(i => i.Id == changedProject.ProjectId).Owner.UserName == User.Identity.Name;
+
+            var isITowner = _context.Project.Include(u => u.Owner).Include(t => t.ProjectTechnology)
+                .Single(i => i.Id == changedProject.ProjectId).Owner.UserName.ToLower() == User.Identity.Name.ToLower(); ;
             if (isITowner)
             {
                 Project editedProject = _context.Project.Single(p => p.Id == changedProject.ProjectId);
@@ -210,6 +213,9 @@ namespace CodeTogetherNG_WebAPI.Controllers
                 return new JsonResult(_context.ProjectMember.Where(p => p.ProjectId == projectId && p.AddMember ==null)
                                         .Select(p => new
                                         {
+                                            Id = p.Id,
+                                            ProjectName = p.Project.Title,
+                                            Date = p.MessageDate.ToString("dd/MM/yyyy"),
                                             MemberId = p.MemberId,
                                             MemberName = p.Member.UserName,
                                             Message = p.Message,
@@ -234,7 +240,7 @@ namespace CodeTogetherNG_WebAPI.Controllers
                                         {
                                             Date = p.MessageDate,
                                             Accepted = p.AddMember
-                                        }).OrderByDescending(p => p.Date).First();
+                                        }).OrderByDescending(p => p.Date).FirstOrDefault();
 
             if (result is null)
                 return new JsonResult(new { Display=true, Message="" }); // first attempt
@@ -258,7 +264,10 @@ namespace CodeTogetherNG_WebAPI.Controllers
 
             if (_context.Project.Single(p => p.Id == handleRequest.ProjectId).OwnerId == UserId)
             {
-              var status = _context.ProjectMember.Single(p => p.ProjectId == handleRequest.ProjectId && p.MemberId ==  handleRequest.UserId);
+              var status = _context.ProjectMember.Single(p => 
+                  p.ProjectId == handleRequest.ProjectId 
+                  && p.MemberId ==  handleRequest.UserId 
+                  && p.AddMember == null);
                status.AddMember = handleRequest.Accept;
             }
             else
